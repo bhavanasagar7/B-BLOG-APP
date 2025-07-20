@@ -23,7 +23,7 @@ userApp.post(
     //get user resource from client
     const newUser = req.body;
     //check for duplicate user based on username
-    const dbuser = await usercollection.findOne({ username: newUser.username });
+    const dbuser = await usercollection.findOne({ username: newUser.username, userType: newUser.userType });
     //if user found in db
     if (dbuser !== null) {
       res.send({ message: "User existed" });
@@ -44,34 +44,23 @@ userApp.post(
 userApp.post(
   "/login",
   expressAsyncHandler(async (req, res) => {
-    //get cred obj from client
-    const userCred = req.body;
-    //check for username
-    const dbuser = await usercollection.findOne({
-      username: userCred.username,
-    });
-    if (dbuser === null) {
-      res.send({ message: "Invalid username" });
-    } else {
-      //check for password
-      const status = await bcryptjs.compare(userCred.password, dbuser.password);
-      if (status === false) {
-        res.send({ message: "Invalid password" });
-      } else {
-        //create jwt token and encode it
-        const signedToken = jwt.sign(
-          { username: dbuser.username },
-          process.env.SECRET_KEY,
-          { expiresIn: '1d' }
-        );
-        //send res
-        res.send({
-          message: "login success",
-          token: signedToken,
-          user: dbuser,
-        });
-      }
+    const { username, password, userType } = req.body;
+    const user = await usercollection.findOne({ username, userType });
+    if (!user) {
+      return res.send({ message: "Invalid username or userType" });
     }
+    const isPasswordValid = await bcryptjs.compare(password, user.password);
+    if (!isPasswordValid) {
+      return res.send({ message: "Invalid password" });
+    }
+    const token = jwt.sign({ username, userType }, process.env.SECRET_KEY, {
+      expiresIn: "1d",
+    });
+    res.send({
+      message: "login success",
+      token,
+      user,
+    });
   })
 );
 

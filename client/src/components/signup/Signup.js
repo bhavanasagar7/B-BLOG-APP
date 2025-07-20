@@ -14,17 +14,24 @@ function Signup() {
   let [state, setState] = useState(false);
   let [signupSuccess, setSignupSuccess] = useState(false);
 
-  async function onSignUpFormSubmit(userObj) {
-    let res = await axios.post("http://localhost:4000/author-api/user", userObj);
-    console.log(res);
-    if (res.status === 201) {
-      setState(true);
-      setSignupSuccess(true);
-      setErr("");
-    } else {
-      setErr(res.data.message);
-    }
+ async function onSignUpFormSubmit(userObj) {
+  let endpoint =
+    userObj.userType === "author"
+      ? "author-api/user"
+      : "user-api/user";
+  let res = await axios.post(
+    `${process.env.REACT_APP_API_URL}/${endpoint}`,
+    userObj
+  );
+  console.log(res);
+  if (res.data.message === "User created") {
+    setState(true);
+    setSignupSuccess(true);
+    setErr("");
+  } else {
+    setErr(res.data.message);
   }
+}
 
   return (
     <div className="container">

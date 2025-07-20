@@ -1,83 +1,69 @@
-//create redux slice
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 
-//make http req using redux-thunk middleware
-export const userAuthorLoginThunk=createAsyncThunk("user-auhtor-login", async (userCredObj, thunkApi) => {
-  try {
-    if (userCredObj.userType === "user") {
+// Thunk for login
+export const userAuthorLoginThunk = createAsyncThunk(
+  "user-author-login",
+  async (userCredObj, thunkApi) => {
+    try {
+      const endpoint =
+        userCredObj.userType === "author"
+          ? "author-api/login"
+          : "user-api/login";
       const res = await axios.post(
-        "http://localhost:4000/user-api/login",
+        `${process.env.REACT_APP_API_URL}/${endpoint}`,
         userCredObj
       );
-      if (res.data.message == "login success") {
-        //store token in local/session storage
-        localStorage.setItem("token", res.data.token);
-
-        //return data
-      } else {
-        return thunkApi.rejectWithValue(res.data.message);
-      }
       return res.data;
-    }
-    if (userCredObj.userType === "author") {
-      const res = await axios.post(
-        "http://localhost:4000/author-api/login",
-        userCredObj
+    } catch (err) {
+      return thunkApi.rejectWithValue(
+        err.response?.data || { message: "Network error" }
       );
-      if (res.data.message == "login success") {
-        //store token in local/session storage
-        localStorage.setItem("token", res.data.token);
-      } else {
-        return thunkApi.rejectWithValue(res.data.message);
-      }
-      return res.data;
     }
-  } catch (err) {
-    return thunkApi.rejectWithValue(err);
   }
-});
+);
 
 export const userAuthorSlice = createSlice({
   name: "user-author-login",
   initialState: {
-    isPending:false,
-    loginUserStatus:false,
-    currentUser:{},
-    errorOccurred:false,
-    errMsg:''
+    isPending: false,
+    loginUserStatus: false,
+    currentUser: null,
+    errorOccurred: false,
+    errMsg: "",
   },
   reducers: {
-    resetState:(state,action)=>{
-        state.isPending=false;
-        state.currentUser={};
-        state.loginUserStatus=false;
-        state.errorOccurred=false;
-        state.errMsg=''
-    }
+    resetState: (state) => {
+      state.isPending = false;
+      state.loginUserStatus = false;
+      state.currentUser = null;
+      state.errorOccurred = false;
+      state.errMsg = "";
+    },
   },
-  extraReducers: builder=>builder
-  .addCase(userAuthorLoginThunk.pending,(state,action)=>{
-    state.isPending=true;
-  })
-  .addCase(userAuthorLoginThunk.fulfilled,(state,action)=>{
-        state.isPending=false;
-        state.currentUser=action.payload.user;
-        state.loginUserStatus=true;
-        state.errMsg=''
-        state.errorOccurred=false;
-
-  })
-  .addCase(userAuthorLoginThunk.rejected,(state,action)=>{
-        state.isPending=false;
-        state.currentUser={};
-        state.loginUserStatus=false;
-        state.errMsg=action.payload;
-        state.errorOccurred=true;
-  }),
+  extraReducers: (builder) => {
+    builder
+      .addCase(userAuthorLoginThunk.pending, (state) => {
+        state.isPending = true;
+        state.errorOccurred = false;
+        state.errMsg = "";
+      })
+      .addCase(userAuthorLoginThunk.fulfilled, (state, action) => {
+        state.isPending = false;
+        state.currentUser = action.payload && action.payload.user ? action.payload.user : null;
+        state.loginUserStatus = !!(action.payload && action.payload.user);
+        state.errMsg = action.payload && action.payload.message && !action.payload.user ? action.payload.message : "";
+        state.errorOccurred = !!(action.payload && action.payload.message && !action.payload.user);
+      })
+      .addCase(userAuthorLoginThunk.rejected, (state, action) => {
+        state.isPending = false;
+        state.currentUser = null;
+        state.loginUserStatus = false;
+        state.errMsg = action.payload?.message || "Login failed";
+        state.errorOccurred = true;
+      });
+  },
 });
 
-//export action creator functions
-export const {resetState} = userAuthorSlice.actions;
-//export root reducer of this slice
+export const { resetState } = userAuthorSlice.actions;
 export default userAuthorSlice.reducer;

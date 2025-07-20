@@ -6,22 +6,22 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 function Signin() {
-  let {
+  const {
     register,
     handleSubmit,
     formState: { errors },
   } = useForm();
-  let { isPending, currentUser, loginUserStatus, errorOccurred, errMsg } =
+  const { isPending, currentUser, loginUserStatus, errorOccurred, errMsg } =
     useSelector((state) => state.userAuthoruserAuthorLoginReducer);
-  let dispatch = useDispatch();
-  let navigate = useNavigate();
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   function onSignUpFormSubmit(userCred) {
     dispatch(userAuthorLoginThunk(userCred));
   }
 
   useEffect(() => {
-    if (loginUserStatus) {
+    if (loginUserStatus && currentUser) {
       if (currentUser.userType === "user") {
         navigate("/user-profile");
       }
@@ -29,7 +29,7 @@ function Signin() {
         navigate("/author-profile");
       }
     }
-  }, [loginUserStatus]);
+  }, [loginUserStatus, currentUser, navigate]);
 
   return (
     <div className="container">
@@ -40,14 +40,12 @@ function Signin() {
               <h2 className="p-3">Signin</h2>
             </div>
             <div className="card-body">
-              {/* invalid cred err */}
-              {errorOccurred === true && (
+              {errorOccurred && (
                 <p className="text-center" style={{ color: "var(--crimson)" }}>
                   {errMsg}
                 </p>
               )}
               <form onSubmit={handleSubmit(onSignUpFormSubmit)}>
-                {/* radio */}
                 <div className="mb-4">
                   <label
                     htmlFor="user"
@@ -106,7 +104,6 @@ function Signin() {
                     {...register("password")}
                   />
                 </div>
-
                 <div className="text-end">
                   <button type="submit" className="text-light">
                     Login
